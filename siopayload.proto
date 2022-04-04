@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+message FlowControl {
+    bool dxr = 1;
+    bool xts = 2;
+}
+
+message DataTransfer {
+    bytes data = 1;
+}
+
+message SIOPayload {
+    oneof type {
+        DataTransfer data_transfer = 1;
+        FlowControl flow_control = 2;
+    }
+}
