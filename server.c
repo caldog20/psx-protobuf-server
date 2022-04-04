@@ -12,7 +12,7 @@
 #include "siopayload.pb.h"
 #include "common.h"
 
-#define HOST_IP "1.1.1.1"
+#define HOST_IP "0.0.0.0"
 #define HOST_PORT 3333
 
 /* This callback function will be called during the encoding.
