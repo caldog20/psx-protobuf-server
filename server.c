@@ -8,7 +8,7 @@
 #include <arpa/inet.h>
 #include <pb_encode.h>
 #include <pb_decode.h>
-
+#include <sys/ioctl.h>
 #include "siopayload.pb.h"
 #include "common.h"
 
@@ -59,36 +59,60 @@
  */
 void handle_connection(int connfd)
 {
+    int pin1, pin2;
     while(1) {
-        /* Decode the message from the client and open the requested directory. */
-        {
-            SIOPayload payload = {};
-            pb_istream_t input = pb_istream_from_socket(connfd);
-            
-            if (!pb_decode_delimited(&input, SIOPayload_fields, &payload))
-            {
-                printf("Decode failed: %s\n", PB_GET_ERROR(&input));
-                return;
-            }
-            
-            /* Print the data contained in the message. */
-            printf("SIO Payload\n");
-            printf("  which_type: %d\n", payload.which_type);
-            switch(payload.which_type)
-            {
-                case SIOPayload_data_transfer_tag:
-                    printf("Data Transfer Message\n");
-                    // printf("  data_send.length: %d\n", payload.type.data_transfer);
-                    break;
+        int count = 0;
+        ioctl(connfd, FIONREAD, &count);
+        // If we received a message, send one back to toggle PSX lines
+            if (count > 0){
+            /* Decode the message from the client and open the requested directory. */
+                SIOPayload payload = {};
+                pb_istream_t input = pb_istream_from_socket(connfd);
+                
+                if (!pb_decode_delimited(&input, SIOPayload_fields, &payload))
+                {
+                    printf("Decode failed: %s\n", PB_GET_ERROR(&input));
+                    return;
+                }
+                
+                /* Print the data contained in the message. */
+                printf("SIO Payload:\n");
+                printf("which_type: %d\n", payload.which_type);
+                switch(payload.which_type)
+                {
+                    case SIOPayload_data_transfer_tag:
+                        printf("Data Transfer Message\n");
+                        // printf("  data_send.length: %d\n", payload.type.data_transfer);
+                        break;
 
-                case SIOPayload_flow_control_tag:
-                    printf("Flow Control Message\n");
-                    printf("psx_rts: %d\n", payload.type.flow_control.dxr);
-                    printf("psx_dtr: %d\n", payload.type.flow_control.xts);
+                    case SIOPayload_flow_control_tag:
+                        printf("Flow Control Message\n");
+                        printf("psx_rts: %d\n", payload.type.flow_control.dxr);
+                        printf("psx_dtr: %d\n\n", payload.type.flow_control.xts);
+                        pin1 = payload.type.flow_control.dxr;
+                        pin2 = payload.type.flow_control.xts;
+                        break;
+                }
+            {
+                printf("Sending a response\n");
+                FlowControl ftcl = FlowControl_init_zero;
+                ftcl.dxr = pin1;
+                ftcl.xts = pin2;
+                SIOPayload payload = SIOPayload_init_zero;
+                pb_ostream_t output = pb_ostream_from_socket(connfd);
+                payload.type.flow_control = ftcl;
+                payload.which_type = SIOPayload_flow_control_tag;
+                printf("Encoding\n");
+                if (!pb_encode_delimited(&output, SIOPayload_fields, &payload)) {
+                    printf("Encoding failed: %s\n", PB_GET_ERROR(&output));
                     break;
+                }
+                printf("Sent\n");
             }
         }
-        printf("Done\n");
+
+
+
 }
     // /* List the files in the directory and transmit the response to client */
     // {

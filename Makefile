@@ -5,7 +5,7 @@ include ./nanopb.mk
 CFLAGS = -ansi -Werror  -g -O0
 CFLAGS += -I$(NANOPB_DIR)
 
-all: server
+all: server client
 
 .SUFFIXES:
 

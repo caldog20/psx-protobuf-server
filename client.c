@@ -9,25 +9,34 @@
 #include <pb_encode.h>
 #include <pb_decode.h>
 
-#include "fileproto.pb.h"
+#include "siopayload.pb.h"
 #include "common.h"
 
-bool listdir(int fd, char* arg)
+bool sendFC(int fd, char* arg)
 {
     /* Construct and send the request to server */
     {
-        ControlReceive message = ControlReceive_init_zero;
+        SIOPayload payload = SIOPayload_init_zero;
+        FlowControl message = FlowControl_init_zero;
         pb_ostream_t output = pb_ostream_from_socket(fd);
         
         /* In our protocol, path is optional. If it is not given,
          * the server will list the root directory. */
+        if (strcmp(arg, "ON")==0) {
+            message.dxr = true;
+            message.xts = true;
+        } else {
+            message.dxr = true;
+            message.xts = false;    
+        }
         
-        message.dsr = true;
-        message.cts = false;
-        fprintf(stdout, "Sending CTS: %d, DSR: %d\n", message.cts, message.dsr);
+        payload.type.flow_control = message;
+        payload.which_type = SIOPayload_flow_control_tag;
+
+        fprintf(stdout, "Sending RTS: %d, DTR: %d\n", message.xts, message.dxr);
         /* Encode the request. It is written to the socket immediately
          * through our custom stream. */
-        if (!pb_encode_delimited(&output, ControlReceive_fields, &message))
+        if (!pb_encode_delimited(&output, SIOPayload_fields, &payload))
         {
             fprintf(stderr, "Encoding failed: %s\n", PB_GET_ERROR(&output));
             return false;
@@ -35,23 +44,23 @@ bool listdir(int fd, char* arg)
     }
     fprintf(stdout, "Encoding sucessful\n");
     /* Read back the response from server */
-    {
-        ControlReceive message = {};
-        pb_istream_t input = pb_istream_from_socket(fd);
-        fprintf(stdout, "Trying to decode...\n");
-        /*
-        if (!pb_decode(&input, TestMessage_fields, &message))
-        {
-            fprintf(stderr, "Decode failed: %s\n", PB_GET_ERROR(&input));
-            return false;
-        }
-        */
-        fprintf(stdout, "decoded...\n");
-        pb_decode_delimited(&input, ControlReceive_fields, &message);
-        /* If the message from server decodes properly, but directory was
-         * not found on server side, we get path_error == true. */
-        fprintf(stdout, "Received CTS: %d, DSR: %d\n", message.cts, message.dsr);
-    }
+    // {
+    //     ControlReceive message = {};
+    //     pb_istream_t input = pb_istream_from_socket(fd);
+    //     fprintf(stdout, "Trying to decode...\n");
+    //     /*
+    //     if (!pb_decode(&input, TestMessage_fields, &message))
+    //     {
+    //         fprintf(stderr, "Decode failed: %s\n", PB_GET_ERROR(&input));
+    //         return false;
+    //     }
+    //     */
+    //     fprintf(stdout, "decoded...\n");
+    //     pb_decode_delimited(&input, ControlReceive_fields, &message);
+    //     /* If the message from server decodes properly, but directory was
+    //      * not found on server side, we get path_error == true. */
+    //     fprintf(stdout, "Received CTS: %d, DSR: %d\n", message.cts, message.dsr);
+    // }
     
     return true;
 }
@@ -79,10 +88,10 @@ int main(int argc, char **argv)
         return 1;
     }
     if (arg == NULL) {
-        arg = "FUCKER\n";
+        arg = "OFF\n";
     }
     /* Send the directory listing request */
-    if (!listdir(sockfd, arg))
+    if (!sendFC(sockfd, arg))
         return 2;
     
     /* Close connection */
