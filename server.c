@@ -9,8 +9,11 @@
 #include <pb_encode.h>
 #include <pb_decode.h>
 
-#include "fileproto.pb.h"
+#include "siopayload.pb.h"
 #include "common.h"
+
+#define HOST_IP "1.1.1.1"
+#define HOST_PORT 3333
 
 /* This callback function will be called during the encoding.
  * It will write out any number of FileInfo entries, without consuming unnecessary memory.
@@ -125,8 +128,8 @@ int main(int argc, char **argv)
     
     memset(&servaddr, 0, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
-    inet_pton(AF_INET, "10.170.241.9", &servaddr.sin_addr); 
-    servaddr.sin_port = htons(3333);
+    inet_pton(AF_INET, HOST_IP, &servaddr.sin_addr); 
+    servaddr.sin_port = htons(HOST_PORT);
     if (bind(listenfd, (struct sockaddr*)&servaddr, sizeof(servaddr)) != 0)
     {
         perror("bind");
