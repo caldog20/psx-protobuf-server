@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import 'nanopb.proto';
+
 message FlowControl {
     bool dxr = 1;
     bool xts = 2;
