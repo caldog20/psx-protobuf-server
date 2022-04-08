@@ -28,7 +28,7 @@
 #include <pb_decode.h>
 #include <pb_common.h>
 #define HOST_IP "0.0.0.0"
-#define HOST_PORT 3333
+#define HOST_PORT 6700
 
 typedef struct _mydata_t 
 { 
