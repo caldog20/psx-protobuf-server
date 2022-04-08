@@ -67,7 +67,7 @@ bool DataTransfer_callback(pb_istream_t *stream, const pb_field_t *field, void *
 
     if (!pb_read(stream, buffer, strlen))
         return false;
-    buffer[strlen] = '\0';
+    // buffer[strlen] = '\0';
     /*printf("size was %d and bytes were %s\n", strlen, data.buf);*/
     printf("%s\n", data.buf);
     return true;
@@ -116,6 +116,15 @@ void handle_connection(int connfd, int argc, char** argv) {
           
           if (msg.which_type == SIOPayload_flow_control_tag ) {
             printf("dxr: %d, xts: %d\n", msg.type.flow_control.dxr, msg.type.flow_control.xts);
+            SIOPayload payload = SIOPayload_init_zero;
+            payload.which_type = SIOPayload_flow_control_tag;
+            payload.type.flow_control.dxr = 0;
+            payload.type.flow_control.xts = 0;
+            pb_ostream_t output = pb_ostream_from_socket(connfd);
+            if (!pb_encode_delimited(&output, SIOPayload_fields, &payload)) {
+            printf("Encoding failed: %s\n", PB_GET_ERROR(&output));
+            }
+
           } 
 
         }
