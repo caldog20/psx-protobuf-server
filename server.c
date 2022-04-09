@@ -67,7 +67,7 @@ bool DataTransfer_callback(pb_istream_t *stream, const pb_field_t *field, void *
 
     if (!pb_read(stream, buffer, strlen))
         return false;
-    // buffer[strlen] = '\0';
+    buffer[strlen] = '\0';
     /*printf("size was %d and bytes were %s\n", strlen, data.buf);*/
     printf("%s\n", data.buf);
     return true;
